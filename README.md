@@ -625,7 +625,7 @@ The relevant events included:
 
 These were successful network authentications originating from Kali.
 
-![Windows Kerberoast Authentication](Screenshots/19-AD-Windows-Kerberoast-authentication.png)
+![Windows Kerberoast Authentication](Screenshots/19-AD-windows-kerberoast-authentication.png)
 
 ---
 
@@ -664,7 +664,7 @@ The results included the controlled password spray, anonymous SMB activity, and 
 
 The Windows Security log provided a useful timeline of network authentication originating from Kali.
 
-![Windows Network Authentication Timeline](Screenshots/22-AD-Windows-network-authentication-timeline.png)
+![Windows Network Authentication Timeline](Screenshots/22-AD-windows-network-authentication-timeline.png)
 
 ---
 
@@ -779,7 +779,7 @@ The resulting collection contained information about:
 
 The collection was imported into BloodHound for analysis.
 
-![Bloodhound Collection](Screenshots/12-AD-BloodHound-collection.png)
+![Bloodhound Collection](Screenshots/12-AD-bloodhound-collection.png)
 
 ---
 
@@ -799,11 +799,11 @@ BloodHound showed the following properties for `lab.service`:
 
 The account was therefore an SPN-bearing standard user account rather than an administrative account.
 
-![Bloodhound Service Account](Screenshots/13-AD-BloodHound-service-account.png)
+![Bloodhound Service Account](Screenshots/13-AD-bloodhound-service-account.png)
 
 Additional BloodHound object information confirmed the same properties.
 
-![Bloodhound Service Account Properties](Screenshots/14-AD-BloodHound-lab-service-properties.png)
+![Bloodhound Service Account Properties](Screenshots/14-AD-bloodhound-lab-service-properties.png)
 
 ---
 
@@ -819,11 +819,11 @@ BloodHound showed:
 
 This relationship corresponded to the delegated password-reset permission configured in Lab 14.
 
-![Bloodhound Admin Account Membership](Screenshots/15-AD-BloodHound-lab-admin-membership.png)
+![Bloodhound Admin Account Membership](Screenshots/15-AD-bloodhound-lab-admin-membership.png)
 
 The outbound control relationship was separately captured:
 
-![Bloodhound Delegated Control](Screenshots/16-AD-BloodHound-delegated-control.png)
+![Bloodhound Delegated Control](Screenshots/16-AD-bloodhound-delegated-control.png)
 
 ---
 
@@ -887,7 +887,7 @@ After the lab systems were restarted, the BloodHound database was reopened and t
 
 This demonstrated that the BloodHound data and relationship persisted after the VM restart.
 
-![Bloodhound delegated control revalidated](Screenshots/21-AD-BloodHound-delegated-control-revalidated.png)
+![Bloodhound delegated control revalidated](Screenshots/21-AD-bloodhound-delegated-control-revalidated.png)
 
 ---
 
