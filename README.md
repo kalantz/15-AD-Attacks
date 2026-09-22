@@ -286,7 +286,6 @@ Anonymous LDAP metadata enumeration was possible, but anonymous directory search
 
 This provided a useful distinction between **anonymous LDAP connectivity** and **anonymous directory enumeration**.
 
-**Evidence:** `03-AD-LDAP-anon-user-enum.png`
 ![LDAP Anonymous User Enumeration](Screenshots/03-AD-LDAP-anon-enum.png)
 
 ---
