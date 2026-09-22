@@ -197,7 +197,7 @@ Notable services included:
 
 This confirmed that DC01 exposed the expected Active Directory service surface.
 
-![Nmap DC01 Services](screenshots/01-AD-Nmap-DC01-services.png)
+![Nmap DC01 Services](Screenshots/01-AD-Nmap-DC01-services.png)
 
 ---
 
@@ -231,7 +231,7 @@ SMB1 was reported as disabled.
 
 Anonymous SMB session establishment was permitted, but the test did **not** establish anonymous access to SYSVOL, NETLOGON, administrative shares, or other domain resources.
 
-![SMB Anonymous Enumeration](screenshots/02-AD-SMB-anon-enum.png)
+![SMB Anonymous Enumeration](Screenshots/02-AD-SMB-anon-enum.png)
 
 ---
 
@@ -287,7 +287,7 @@ Anonymous LDAP metadata enumeration was possible, but anonymous directory search
 This provided a useful distinction between **anonymous LDAP connectivity** and **anonymous directory enumeration**.
 
 **Evidence:** `03-AD-LDAP-anon-user-enum.png`
-![LDAP Anonymous User Enumeration](screenshots/03-AD-LDAP-anon-enum.png)
+![LDAP Anonymous User Enumeration](Screenshots/03-AD-LDAP-anon-enum.png)
 
 ---
 
@@ -350,7 +350,7 @@ The query returned domain accounts including:
 
 Authenticated LDAP provided significantly more directory information than anonymous LDAP.
 
-![Authenicated LDAP Enumeration](screenshots/05-AD-authenticated-LDAP-enum.png)
+![Authenicated LDAP Enumeration](Screenshots/05-AD-authenticated-LDAP-enum.png)
 
 ---
 
@@ -385,7 +385,7 @@ These values correspond to:
 
 A disabled account-lockout threshold can increase exposure to password-guessing and password-spraying techniques because repeated failed authentication does not automatically lock the account.
 
-![Password Policy Attack Baseline](screenshots/06-AD-pass-policy-attack-baseline.png)
+![Password Policy Attack Baseline](Screenshots/06-AD-pass-policy-attack-baseline.png)
 
 ---
 
@@ -428,7 +428,7 @@ The controlled password spray successfully authenticated as `lab.user` while fai
 
 The test used one password against three intentionally created lab accounts rather than conducting a large password attack.
 
-![Password Spray Attack](screenshots/07-AD-pass-spray.png)
+![Password Spray Attack](Screenshots/07-AD-pass-spray.png)
 
 ---
 
@@ -459,7 +459,7 @@ The correlation provides strong evidence that the controlled authentication atte
 
 A 4624 event alone does not establish malicious intent; the controlled test and matching source address provide the context.
 
-![Windows Password Spray Events](screenshots/17-AD-Windows-pass-spray-events.png)
+![Windows Password Spray Events](Screenshots/17-AD-Windows-pass-spray-events.png)
 
 ---
 
@@ -506,7 +506,7 @@ lab.service    {HTTP/labservice.home.lab}
 
 This created the intentionally vulnerable Kerberoasting target.
 
-![SPN Enumeration](screenshots/08-AD-SPN-enum.png)
+![SPN Enumeration](Screenshots/08-AD-SPN-enum.png)
 
 ---
 
@@ -543,7 +543,7 @@ This is an RC4-HMAC Kerberos service-ticket hash.
 
 The attack demonstrated that a user capable of requesting a service ticket can obtain material that can be subjected to offline password analysis when a vulnerable service account uses an appropriate encryption type.
 
-![Kerberoast Ticket](screenshots/09-AD-Kerberoast-ticket.png)
+![Kerberoast Ticket](Screenshots/09-AD-Kerberoast-ticket.png)
 
 **Public repository limitation:** The complete Kerberos hash was not included in the public documentation.
 
@@ -586,7 +586,7 @@ The recovered credential was validated later through Active Directory authentica
 
 This established that the captured service-ticket material was sufficient to recover the intentionally weak lab service-account password through offline analysis.
 
-![Kerberoast Offline Recovery](screenshots/10-AD-Kerberoast-offline-recovery.png)
+![Kerberoast Offline Recovery](Screenshots/10-AD-Kerberoast-offline-recovery.png)
 
 The recovered password is intentionally omitted from this README and should not be committed to a public repository.
 
@@ -626,7 +626,7 @@ The relevant events included:
 
 These were successful network authentications originating from Kali.
 
-![Windows Kerberoast Authentication](screenshots/19-AD-Windows-Kerberoast-authentication.png)
+![Windows Kerberoast Authentication](Screenshots/19-AD-Windows-Kerberoast-authentication.png)
 
 ---
 
@@ -665,7 +665,7 @@ The results included the controlled password spray, anonymous SMB activity, and 
 
 The Windows Security log provided a useful timeline of network authentication originating from Kali.
 
-![Windows Network Authentication Timeline](screenshots/22-AD-Windows-network-authentication-timeline.png)
+![Windows Network Authentication Timeline](Screenshots/22-AD-Windows-network-authentication-timeline.png)
 
 ---
 
@@ -747,7 +747,7 @@ The recovered service account could read standard domain Group Policy content th
 
 This demonstrates that credential compromise can provide access to domain configuration data even when the compromised account does not have administrative privileges.
 
-![SYSVOL GPO Read](screenshots/11-AD-SYSVOL-GPO-read.png)
+![SYSVOL GPO Read](Screenshots/11-AD-SYSVOL-GPO-read.png)
 
 ---
 
@@ -780,7 +780,7 @@ The resulting collection contained information about:
 
 The collection was imported into BloodHound for analysis.
 
-![Bloodhound Collection](screenshots/12-AD-BloodHound-collection.png)
+![Bloodhound Collection](Screenshots/12-AD-BloodHound-collection.png)
 
 ---
 
@@ -800,11 +800,11 @@ BloodHound showed the following properties for `lab.service`:
 
 The account was therefore an SPN-bearing standard user account rather than an administrative account.
 
-![Bloodhound Service Account](screenshots/13-AD-BloodHound-service-account.png)
+![Bloodhound Service Account](Screenshots/13-AD-BloodHound-service-account.png)
 
 Additional BloodHound object information confirmed the same properties.
 
-![Bloodhound Service Account Properties](screenshots/14-AD-BloodHound-lab-service-properties.png)
+![Bloodhound Service Account Properties](Screenshots/14-AD-BloodHound-lab-service-properties.png)
 
 ---
 
@@ -820,11 +820,11 @@ BloodHound showed:
 
 This relationship corresponded to the delegated password-reset permission configured in Lab 14.
 
-![Bloodhound Admin Account Membership](screenshots/15-AD-BloodHound-lab-admin-membership.png)
+![Bloodhound Admin Account Membership](Screenshots/15-AD-BloodHound-lab-admin-membership.png)
 
 The outbound control relationship was separately captured:
 
-![Bloodhound Delegated Control](screenshots/16-AD-BloodHound-delegated-control.png)
+![Bloodhound Delegated Control](Screenshots/16-AD-BloodHound-delegated-control.png)
 
 ---
 
@@ -876,7 +876,7 @@ The Windows ACL independently confirms that `Lab-IT-Admins` has permission to re
 
 This validates the BloodHound relationship at the underlying Active Directory permission level.
 
-![Delegated Password Reset ACL](screenshots/20-AD-delegated-pass-reset-ACL.png)
+![Delegated Password Reset ACL](Screenshots/20-AD-delegated-pass-reset-ACL.png)
 
 ---
 
@@ -888,7 +888,7 @@ After the lab systems were restarted, the BloodHound database was reopened and t
 
 This demonstrated that the BloodHound data and relationship persisted after the VM restart.
 
-![Bloodhound delegated control revalidated](screenshots/21-AD-BloodHound-delegated-control-revalidated.png)
+![Bloodhound delegated control revalidated](Screenshots/21-AD-BloodHound-delegated-control-revalidated.png)
 
 ---
 
